@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 use std::vec::Vec;
 
-use alloy::primitives::map::{Entry, HashMap};
+use alloy::primitives::map::Entry;
 use alloy::primitives::BlockNumber;
 use alloy::{
     consensus::constants::KECCAK_EMPTY,
@@ -10,8 +10,7 @@ use alloy::{
 use revm::db::AccountState;
 use revm::primitives::{Account, AccountInfo, Bytecode};
 use revm::{Database, DatabaseCommit, DatabaseRef};
-
-use crate::fast_hasher::SimpleBuildHasher;
+use ahash::HashMap;
 
 /// A [Database] implementation that stores all state changes in memory.
 ///
@@ -27,7 +26,7 @@ pub struct FastCacheDB<ExtDB> {
     /// `code` is always `None`, and bytecode can be found in `contracts`.
     pub accounts: HashMap<Address, FastDbAccount>,
     /// Tracks all contracts by their code hash.
-    pub contracts: HashMap<B256, Bytecode, SimpleBuildHasher>,
+    pub contracts: HashMap<B256, Bytecode>,
     /// All logs that were committed via [DatabaseCommit::commit].
     pub logs: Vec<Log>,
     /// All cached block hashes from the [DatabaseRef].
@@ -49,7 +48,7 @@ impl<ExtDB> FastCacheDB<ExtDB> {
     where
         ExtDB: DatabaseRef<Error = Infallible>,
     {
-        let mut contracts = HashMap::with_hasher(SimpleBuildHasher::default());
+        let mut contracts = HashMap::default();
         contracts.insert(KECCAK_EMPTY, Bytecode::default());
         contracts.insert(B256::ZERO, Bytecode::default());
         Self { accounts: HashMap::default(), contracts, logs: Vec::default(), block_hashes: HashMap::default(), db }
@@ -114,7 +113,7 @@ impl<ExtDB: DatabaseRef> FastCacheDB<ExtDB> {
 }
 
 impl<ExtDB> DatabaseCommit for FastCacheDB<ExtDB> {
-    fn commit(&mut self, changes: HashMap<Address, Account>) {
+    fn commit(&mut self, changes: revm::primitives::HashMap<Address, Account>) {
         for (address, mut account) in changes {
             if !account.is_touched() {
                 continue;
@@ -269,7 +268,7 @@ pub struct FastDbAccount {
     /// If account is selfdestructed or newly created, storage will be cleared.
     pub account_state: AccountState,
     /// storage slots
-    pub storage: HashMap<U256, U256, SimpleBuildHasher>,
+    pub storage: HashMap<U256, U256>,
 }
 
 impl FastDbAccount {
@@ -300,7 +299,7 @@ impl From<AccountInfo> for FastDbAccount {
 
 #[cfg(test)]
 mod tests {
-    use alloy::primitives::map::HashMap;
+    use ahash::HashMap;
     use std::collections::BTreeMap;
     use std::sync::Arc;
 

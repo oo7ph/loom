@@ -8,6 +8,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+ahash = "0.8.11"
 alloy.workspace = true
 eyre.workspace = true
 rand.workspace = true

@@ -5030,6 +5030,7 @@ dependencies = [
 name = "loom-evm-db"
 version = "0.2.0"
 dependencies = [
+ "ahash",
  "alloy",
  "chrono",
  "criterion",
